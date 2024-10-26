@@ -1,6 +1,7 @@
 package com.noom.interview.fullstack.sleep.repository
 
 import com.noom.interview.fullstack.sleep.model.User
+import io.zonky.test.db.AutoConfigureEmbeddedDatabase
 import org.assertj.core.api.Assertions.*
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
 @DataJpaTest
+@AutoConfigureEmbeddedDatabase
 class UserRepositoryTest {
 
     @Autowired
