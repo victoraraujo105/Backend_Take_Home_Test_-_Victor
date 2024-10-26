@@ -48,3 +48,6 @@ Dockerfiles are set up for your convenience for running the whole project. You w
 
 To run everything, simply execute `docker-compose up`. To build and run, execute `docker-compose up --build`.
 
+## Running Tests
+
+To run tests properly, docker daemon should be running. Then, execute `./gradlew test` in the sleep directory of the project.

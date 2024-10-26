@@ -3,20 +3,18 @@ package com.noom.interview.fullstack.sleep.repository
 import com.noom.interview.fullstack.sleep.model.SleepLog
 import com.noom.interview.fullstack.sleep.model.SleepQuality
 import com.noom.interview.fullstack.sleep.model.User
+import io.zonky.test.db.AutoConfigureEmbeddedDatabase
 import org.assertj.core.api.Assertions.*
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
-import org.springframework.context.annotation.Bean
-import org.springframework.dao.DataIntegrityViolationException
-import org.springframework.transaction.annotation.Propagation
-import org.springframework.transaction.annotation.Transactional
+import java.time.Duration
 import java.time.LocalDateTime
 
 @DataJpaTest
+@AutoConfigureEmbeddedDatabase
 class SleepLogRepositoryTest {
 
     @Autowired
@@ -27,6 +25,12 @@ class SleepLogRepositoryTest {
 
     private lateinit var user: User
 
+    private val logs = arrayListOf<SleepLog>()
+
+    private val now: LocalDateTime = LocalDateTime.now()
+
+    private lateinit var lastMonthLogs: List<SleepLog>
+    
     @BeforeEach
     fun setUp() {
         this.user = userRepository.let {
@@ -36,7 +40,7 @@ class SleepLogRepositoryTest {
                     .password("pass")
                     .build())
         }
-        sleepLogRepository.saveAll(listOf(
+        this.logs.addAll(listOf(
             SleepLog.builder()
                 .quality(SleepQuality.GOOD)
                 .startTime(
@@ -44,7 +48,7 @@ class SleepLogRepositoryTest {
                 .endTime(
                     LocalDateTime.of(2021, 1, 2, 6, 0))
                 .userId(user.id)
-            .build(),
+                .build(),
             SleepLog.builder()
                 .quality(SleepQuality.OK)
                 .startTime(
@@ -52,7 +56,7 @@ class SleepLogRepositoryTest {
                 .endTime(
                     LocalDateTime.of(2021, 1, 3, 6, 0))
                 .userId(user.id)
-            .build(),
+                .build(),
             SleepLog.builder()
                 .quality(SleepQuality.BAD)
                 .startTime(
@@ -60,8 +64,32 @@ class SleepLogRepositoryTest {
                 .endTime(
                     LocalDateTime.of(2021, 1, 4, 6, 0))
                 .userId(user.id)
-            .build()
+                .build()
         ))
+        this.setUp_LastMonth()
+        sleepLogRepository.saveAll(logs)
+    }
+
+    fun setUp_LastMonth() {
+        this.lastMonthLogs = generateSequence(1) { it + 1 }
+            .take(30)
+            .map {
+                val startTime = now
+                    .minusDays(it.toLong())
+                    .withHour((19..23).random())
+                    .withMinute((0..59).random())
+                val endTime = startTime
+                    .plusHours((6..8).random().toLong())
+                    .plusMinutes((0..59).random().toLong())
+                SleepLog.builder()
+                    .quality(SleepQuality.entries.random())
+                    .startTime(startTime)
+                    .endTime(endTime)
+                    .userId(user.id)
+                .build()
+            }
+            .toList()
+        logs.addAll(this.lastMonthLogs)
     }
 
     @AfterEach
@@ -73,9 +101,9 @@ class SleepLogRepositoryTest {
     fun findAll_WhenSleepLogsExist_ReturnsSleepLogs() {
         val user = userRepository.findByUsername("user")
         val sleepLogs = sleepLogRepository.findAll()
-        assertThat(sleepLogs).hasSize(3)
+        assertThat(sleepLogs).hasSize(logs.size)
         assertThat(sleepLogs.map { it.userId }).allMatch { it == user!!.id }
-        assertThat(sleepLogs.map { it.quality }).containsExactlyInAnyOrder(SleepQuality.GOOD, SleepQuality.OK, SleepQuality.BAD)
+        assertThat(sleepLogs.map { it.quality }).containsExactlyInAnyOrderElementsOf(this.logs.map { it.quality })
     }
 
     @Test
@@ -102,6 +130,26 @@ class SleepLogRepositoryTest {
         sleepLog.quality = SleepQuality.OK
         val updatedSleepLog = sleepLogRepository.save(sleepLog)
         assertThat(updatedSleepLog.quality).isEqualTo(SleepQuality.OK)
+    }
+    
+    @Test
+    fun getLastMonthAverages_WhenSleepLogsExist_ReturnsAverages() {
+        val averages = sleepLogRepository.getLastMonthAverages(this.user.id, now.toLocalDate())
+        assertThat(averages).isNotNull
+        assertThat(averages.averageTotalTimeSeconds).isEqualTo(this.lastMonthLogs.map { Duration.between(it.startTime, it.endTime).seconds }.average().toLong())
+        assertThat(averages.averageStartTime.toSecondOfDay()).isEqualTo(this.lastMonthLogs.map { it.startTime.toLocalTime().toSecondOfDay() }.average().toInt())
+        assertThat(averages.averageEndTime.toSecondOfDay()).isEqualTo(this.lastMonthLogs.map { it.endTime.toLocalTime().toSecondOfDay() }.average().toInt())
+        assertThat(averages.initialDate).isEqualTo(this.lastMonthLogs.minOfOrNull { it.startTime.toLocalDate() })
+        assertThat(averages.finalDate).isEqualTo(this.lastMonthLogs.maxOfOrNull { it.endTime.toLocalDate() })
+    }
+
+    @Test
+    fun getLastMonthSleepQualityCount_WhenSleepLogsExist_ReturnsQualityCount() {
+        val qualityCount = sleepLogRepository.getLastMonthSleepQualityCount(this.user.id, now.toLocalDate())
+        assertThat(qualityCount).isNotNull
+        assertThat(qualityCount[SleepQuality.GOOD]).isEqualTo(this.lastMonthLogs.count { it.quality == SleepQuality.GOOD }.toLong())
+        assertThat(qualityCount[SleepQuality.OK]).isEqualTo(this.lastMonthLogs.count { it.quality == SleepQuality.OK }.toLong())
+        assertThat(qualityCount[SleepQuality.BAD]).isEqualTo(this.lastMonthLogs.count { it.quality == SleepQuality.BAD }.toLong())
     }
 
 }
