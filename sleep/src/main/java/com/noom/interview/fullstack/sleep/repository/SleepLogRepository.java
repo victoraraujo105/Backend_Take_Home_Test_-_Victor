@@ -19,6 +19,7 @@ import java.util.Set;
 
 public interface SleepLogRepository extends JpaRepository<SleepLog, Long> {
     interface AveragesResult {
+        Long getCount();
         Long getAverageTotalTimeSeconds();
         LocalTime getAverageStartTime();
         LocalTime getAverageEndTime();
@@ -31,6 +32,7 @@ public interface SleepLogRepository extends JpaRepository<SleepLog, Long> {
 
     @Query(value =
         "SELECT " +
+        "COUNT(*) AS count, " +
         "EXTRACT(EPOCH FROM AVG(end_time - start_time)) AS averageTotalTimeSeconds, " +
         "CAST(AVG(start_time - CAST(start_time AS DATE)) AS TIME) AS averageStartTime, " +
         "CAST(AVG(end_time - CAST(end_time AS DATE)) AS TIME) AS averageEndTime " +
@@ -46,7 +48,7 @@ public interface SleepLogRepository extends JpaRepository<SleepLog, Long> {
     default LastMonthAveragesResult getLastMonthAverages(Long userId, LocalDate referenceDate) {
         LocalDate initialDate = referenceDate.minusDays(30);
         AveragesResult result = getAverages(userId, initialDate.atStartOfDay(), referenceDate.atTime(LocalTime.MAX));
-        if (Objects.isNull(result)) {
+        if (result.getCount() == 0) {
             return null;
         }
         return new LastMonthAveragesResult(
