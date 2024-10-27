@@ -1,0 +1,59 @@
+{
+	"info": {
+		"_postman_id": "9a3f5fb1-fe8b-4bd0-9f03-108c034ab311",
+		"name": "Noom Sleep Log",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "27834787"
+	},
+	"item": [
+		{
+			"name": "Fetch Last Month Stats",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/sleep-logs/last-month-stats",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"sleep-logs",
+						"last-month-stats"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Submit Last Night",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"startTime\": \"10-26-2024 22:07\",\n    \"endTime\": \"10-27-2024 06:47\",\n    \"sleepQuality\": \"OK\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/sleep-logs/last-night",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"sleep-logs",
+						"last-night"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
