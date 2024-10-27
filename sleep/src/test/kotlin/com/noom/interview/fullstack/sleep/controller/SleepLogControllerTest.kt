@@ -138,4 +138,17 @@ class SleepLogControllerTest {
                 assertThat(response.sleepQualityCount).containsExactlyInAnyOrderEntriesOf(sleepQualityCount)
             }
     }
+
+    @Test
+    fun getLastMonthStats_WhenNoStats_ThenReturnNoContent() {
+        // Given
+        val today = LocalDateTime.now().toLocalDate()
+        Mockito.`when`(sleepLogRepository.getLastMonthAverages(adminUser.id, today))
+            .thenReturn(null)
+
+        // When
+        this.mockMvc.perform(
+            get("/sleep-logs/last-month-stats")
+        ).andExpect { status().isNoContent }
+    }
 }
