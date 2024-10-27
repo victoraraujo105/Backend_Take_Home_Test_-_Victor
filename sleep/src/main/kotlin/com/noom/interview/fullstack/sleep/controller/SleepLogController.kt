@@ -3,6 +3,7 @@
  */
 package com.noom.interview.fullstack.sleep.controller
 
+import com.noom.interview.fullstack.sleep.model.dto.SleepLogLastMonthStatsResponse
 import com.noom.interview.fullstack.sleep.model.dto.SleepLogLastNightCreateRequest
 import com.noom.interview.fullstack.sleep.service.SleepLogService
 import org.springframework.web.bind.annotation.*
@@ -17,4 +18,10 @@ class SleepLogController(
     fun lastNight(@RequestBody @Valid sleepLog: SleepLogLastNightCreateRequest) {
         sleepLogService.saveLastNight(sleepLog)
     }
+
+    @GetMapping("/last-month-stats")
+    fun lastMonthStats(): SleepLogLastMonthStatsResponse {
+        return sleepLogService.getLastMonthStats()
+    }
+
 }
